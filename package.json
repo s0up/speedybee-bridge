@@ -1,0 +1,22 @@
+{
+  "name": "btle-fc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "find.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/s0up/btle-fc.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/s0up/btle-fc/issues"
+  },
+  "homepage": "https://github.com/s0up/btle-fc#readme",
+  "dependencies": {
+    "noble": "^1.9.1"
+  }
+}

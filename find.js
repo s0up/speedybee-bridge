@@ -112,11 +112,6 @@ const getCharacteristics = (error, characteristics) => {
 
   const d = msp.send('MSP_MOTOR');
   write(d);
-  write(d);
-  write(d);
-  write(d);
-  write(d);
-  write(d);
 }
 
 const explore = (error, services) => {
