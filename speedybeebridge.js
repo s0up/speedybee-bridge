@@ -1,8 +1,7 @@
 const noble = require('noble');
 const net = require('net');
-//Serial port that communicates with the configurator
 
-//socat -d -d pty,raw,echo=0 TCP:127.0.0.1:8888
+const debug = false;
 
 const { spawn } = require('child_process');
 
@@ -15,7 +14,9 @@ const processQueue = () => {
   if (queue.length > 0 && tx && mainSocket.socket) {
     const [item] = queue.splice(0, 1);
 
-    console.log(`${item.type}: ${item.data.toString('hex')} ${item.data.toString()}`);
+    if (debug) {
+      console.log(`${item.type}: ${item.data.toString('hex')} ${item.data.toString()}`);
+    }
 
     const write = (d) => {
       while (d.length > 20) {
