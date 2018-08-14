@@ -1,5 +1,5 @@
 {
-  "name": "btle-fc",
+  "name": "speedybee-bridge",
   "version": "1.0.0",
   "description": "",
   "main": "find.js",
@@ -8,16 +8,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/s0up/btle-fc.git"
+    "url": "git+https://github.com/s0up/speedybee-bridge.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/s0up/btle-fc/issues"
+    "url": "https://github.com/s0up/speedybee-bridge/issues"
   },
-  "homepage": "https://github.com/s0up/btle-fc#readme",
+  "homepage": "https://github.com/s0up/speedybee-bridge#readme",
   "dependencies": {
-    "noble": "^1.9.1",
-    "serialport": "^6.2.2"
+    "noble": "^1.9.1"
   }
 }
