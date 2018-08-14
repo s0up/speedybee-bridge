@@ -1,7 +1,12 @@
 const noble = require('noble');
-const msp = require('./msp');
+const SerialPort = require('serialport');
+const net = require('net');
+const EventEmitter = require('events');
 
-const reader = new msp.reader();
+//Serial port that communicates with the configurator
+
+//socat -d -d pty,raw,echo=0 TCP:127.0.0.1:8888
+const emitter = new EventEmitter();
 
 const getCharacteristics = (error, characteristics) => {
   //console.log(`UUID=${characteristics.map(c => `${c.uuid}=${c.type}-${c.properties.join('|')}`)}`);
@@ -16,10 +21,8 @@ const getCharacteristics = (error, characteristics) => {
   rx.notify(true);
 
   rx.on('read', (data) => {
-    reader.handleBuffer(data);
-    reader.on('message', (message) => {
-      console.log(message);
-    });
+    console.log('Received data from SBF4...');
+    emitter.emit('fcData', data);
   });
 
   const tx = characteristics.find(c => c.uuid === '1001');
@@ -39,33 +42,40 @@ const getCharacteristics = (error, characteristics) => {
     tx.write(new Buffer(d), true);
   }
 
+  /*
   const d = msp.send('MSP_MOTOR');
-  write(d);
+  write(d);*/
+  emitter.on('tcpData', (data) => {
+    write(data);
+  });
+
+  console.log('Waiting for commands...');
 }
 
 const explore = (error, services) => {
   for (const service of services) {
     if (service.uuid === '1000') {
+      console.log('Found UART service...');
       service.discoverCharacteristics([], getCharacteristics);
     }
   }
 }
 
-const connect = (perihiperal) => {
-  if (perihiperal.advertisement.localName && perihiperal.advertisement.localName.includes('SBF4')) {
-    perihiperal.connect();
+const connect = (peripheral) => {
+  if (peripheral.advertisement.localName && peripheral.advertisement.localName.includes('SBF4')) {
+    peripheral.connect();
 
     const discover = () => {
       // once you know you have a peripheral with the desired
       // service, you can stop scanning for others:
       noble.stopScanning();
       // get the service you want on this peripheral:
-      perihiperal.discoverServices([], explore);
+      peripheral.discoverServices([], explore);
 
       console.log('Connected to SBF4...');
     }
 
-    perihiperal.on('connect', discover);
+    peripheral.on('connect', discover);
   }
 }
 
@@ -74,10 +84,24 @@ function init() {
   noble.on('discover', connect);
 }
 
+const server = net.createServer((socket) => {
+  socket.on('data', (data) => {
+    emitter.emit('tcpData', data);
+  });
+
+  emitter.on('fcData', (data) => {
+    socket.write(data);
+  })
+});
+
 noble.on('stateChange', (state) => {
   if (state === 'poweredOn') {
     (async () => {
-      init();
+      // grab an arbitrary unused port.
+      server.listen(8888, () => {
+        console.log('Listening on ', server.address());
+        init();
+      });
     })();
   }
 });

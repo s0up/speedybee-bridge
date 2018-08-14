@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/s0up/btle-fc#readme",
   "dependencies": {
-    "noble": "^1.9.1"
+    "noble": "^1.9.1",
+    "serialport": "^6.2.2"
   }
 }
