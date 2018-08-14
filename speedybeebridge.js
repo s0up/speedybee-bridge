@@ -70,20 +70,6 @@ const getCharacteristics = (error, characteristics) => {
     process.exit();
   }
 
-  /*
-  const msp = require('./msp');
-
-  const d = msp.send('MSP_MOTOR');
-  const rawr = () => {
-    setTimeout(() => {
-      write(d);
-      console.log('writing msp motor', d.toString());
-      rawr();
-    }, 1000);
-  }
-
-  rawr();*/
-
   console.log('Waiting for commands...');
 }
 
