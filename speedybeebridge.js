@@ -6,11 +6,49 @@ const EventEmitter = require('events');
 //Serial port that communicates with the configurator
 
 //socat -d -d pty,raw,echo=0 TCP:127.0.0.1:8888
-const emitter = new EventEmitter();
+
+const { spawn } = require('child_process');
+
+let tx = null;
+const mainSocket = { socket: null }
+
+const queue = [];
+
+const processQueue = () => {
+  if (queue.length > 0 && tx && mainSocket.socket) {
+    const [item] = queue.splice(0, 1);
+
+    console.log(`${item.type}: ${item.data.toString('hex')} ${item.data.toString()}`);
+
+    const write = (d) => {
+      while (d.length > 20) {
+        const output = d.slice(0, 19);
+        tx.write(new Buffer(output), true);
+        d = d.slice(19);
+      }
+
+      tx.write(new Buffer(d), true);
+    }
+
+    if (item.type === 'configurator') {
+      write(item.data);
+    }
+
+    if (item.type === 'fc') {
+      mainSocket.socket.write(item.data);
+    }
+  }
+
+  setTimeout(() => {
+    processQueue();
+  }, 0);
+}
+
+processQueue();
+
 
 const getCharacteristics = (error, characteristics) => {
   //console.log(`UUID=${characteristics.map(c => `${c.uuid}=${c.type}-${c.properties.join('|')}`)}`);
-
   const rx = characteristics.find(c => c.uuid === '1002');
 
   if (!rx) {
@@ -21,33 +59,32 @@ const getCharacteristics = (error, characteristics) => {
   rx.notify(true);
 
   rx.on('read', (data) => {
-    console.log('Received data from SBF4...');
-    emitter.emit('fcData', data);
+    queue.push({
+      type: 'fc',
+      data
+    });
   });
 
-  const tx = characteristics.find(c => c.uuid === '1001');
+  tx = characteristics.find(c => c.uuid === '1001');
 
   if (!tx) {
     console.log('Cannot find tx uuid...');
     process.exit();
   }
 
-  const write = (d) => {
-    while (d.length > 20) {
-      const output = d.slice(0, 19);
-      tx.write(new Buffer(output), true);
-      d = d.slice(20);
-    }
+  /*
+  const msp = require('./msp');
 
-    tx.write(new Buffer(d), true);
+  const d = msp.send('MSP_MOTOR');
+  const rawr = () => {
+    setTimeout(() => {
+      write(d);
+      console.log('writing msp motor', d.toString());
+      rawr();
+    }, 1000);
   }
 
-  /*
-  const d = msp.send('MSP_MOTOR');
-  write(d);*/
-  emitter.on('tcpData', (data) => {
-    write(data);
-  });
+  rawr();*/
 
   console.log('Waiting for commands...');
 }
@@ -86,12 +123,12 @@ function init() {
 
 const server = net.createServer((socket) => {
   socket.on('data', (data) => {
-    emitter.emit('tcpData', data);
+    mainSocket.socket = socket;
+    queue.push({
+      type: 'configurator',
+      data
+    });
   });
-
-  emitter.on('fcData', (data) => {
-    socket.write(data);
-  })
 });
 
 noble.on('stateChange', (state) => {
@@ -100,6 +137,18 @@ noble.on('stateChange', (state) => {
       // grab an arbitrary unused port.
       server.listen(8888, () => {
         console.log('Listening on ', server.address());
+
+        const socat = spawn('socat', ['-d', '-d', 'pty,raw,echo=0', 'TCP:127.0.0.1:8888']);
+
+        socat.on('data', (data) => {
+          console.log(`SOCAT: ${data}`);
+        });
+
+        socat.on('error', (data) => {
+          console.log(`SOCAT ERROR: ${data}`);
+        });
+
+
         init();
       });
     })();
