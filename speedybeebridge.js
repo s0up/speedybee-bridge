@@ -1,8 +1,5 @@
 const noble = require('noble');
-const SerialPort = require('serialport');
 const net = require('net');
-const EventEmitter = require('events');
-
 //Serial port that communicates with the configurator
 
 //socat -d -d pty,raw,echo=0 TCP:127.0.0.1:8888
@@ -137,18 +134,7 @@ noble.on('stateChange', (state) => {
       // grab an arbitrary unused port.
       server.listen(8888, () => {
         console.log('Listening on ', server.address());
-
-        const socat = spawn('socat', ['-d', '-d', 'pty,raw,echo=0', 'TCP:127.0.0.1:8888']);
-
-        socat.on('data', (data) => {
-          console.log(`SOCAT: ${data}`);
-        });
-
-        socat.on('error', (data) => {
-          console.log(`SOCAT ERROR: ${data}`);
-        });
-
-
+        spawn('socat', ['-d', '-d', 'pty,raw,echo=0,iexten=0', 'TCP:127.0.0.1:8888'], { stdio: 'inherit' });
         init();
       });
     })();
