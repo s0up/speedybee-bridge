@@ -1,0 +1,3 @@
+#!/bin/bash
+cd ~/Documents/web_workspace/btle-fc
+node btlefc.js
