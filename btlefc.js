@@ -103,7 +103,6 @@ function init() {
 const server = net.createServer((socket) => {
   socket.on('data', (data) => {
     if (!mainSocket) {
-      console.log('setting main socket');
       mainSocket = socket;
     }
 
