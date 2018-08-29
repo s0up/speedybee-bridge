@@ -7,7 +7,7 @@ const { spawn } = require('child_process');
 
 let currentDevice = null;
 let tx = null;
-const mainSocket = { socket: null }
+let mainSocket = null;
 
 const queue = [];
 
@@ -30,41 +30,6 @@ const setCurrentDevice = (name) => {
   currentDevice = devices.find(d => name.includes(d.mustContain));
 }
 
-const processQueue = () => {
-  if (queue.length > 0 && tx && mainSocket.socket) {
-    const [item] = queue.splice(0, 1);
-
-    if (debug) {
-      console.log(`${item.type}: ${item.data.toString('hex')} ${item.data.toString()}`);
-    }
-
-    const write = (d) => {
-      while (d.length > 20) {
-        const output = d.slice(0, 19);
-        tx.write(new Buffer(output), true);
-        d = d.slice(19);
-      }
-
-      tx.write(new Buffer(d), true);
-    }
-
-    if (item.type === 'configurator') {
-      write(item.data);
-    }
-
-    if (item.type === 'fc') {
-      mainSocket.socket.write(item.data);
-    }
-  }
-
-  setTimeout(() => {
-    processQueue();
-  }, 0);
-}
-
-processQueue();
-
-
 const getCharacteristics = (error, characteristics) => {
   //console.log(`UUID=${characteristics.map(c => `${c.uuid}=${c.type}-${c.properties.join('|')}`)}`);
   const rx = characteristics.find(c => c.uuid === currentDevice.rxUUID);
@@ -77,10 +42,11 @@ const getCharacteristics = (error, characteristics) => {
   rx.notify(true);
 
   rx.on('read', (data) => {
-    queue.push({
-      type: 'fc',
-      data
-    });
+    if (!mainSocket) {
+      return;
+    }
+
+    mainSocket.write(data);
   });
 
   tx = characteristics.find(c => c.uuid === currentDevice.txUUID);
@@ -136,11 +102,22 @@ function init() {
 
 const server = net.createServer((socket) => {
   socket.on('data', (data) => {
-    mainSocket.socket = socket;
-    queue.push({
-      type: 'configurator',
-      data
-    });
+    if (!mainSocket) {
+      console.log('setting main socket');
+      mainSocket = socket;
+    }
+
+    const write = (d) => {
+      while (d.length > 20) {
+        const output = d.slice(0, 19);
+        tx.write(new Buffer(output), true);
+        d = d.slice(19);
+      }
+
+      tx.write(new Buffer(d), true);
+    }
+
+    write(data);
   });
 });
 
