@@ -116,6 +116,10 @@ const server = net.createServer((socket) => {
       tx.write(new Buffer(d), true);
     }
 
+    if (!tx) {
+      return;
+    }
+
     write(data);
   });
 });
